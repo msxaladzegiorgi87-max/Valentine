@@ -623,9 +623,7 @@
 
         async function resolveGfPhoto() {
           const candidates = [
-            "gf.png","gf.jpg","gf.jpeg","gf.webp",
-            "gf (1).png","gf (1).jpg","gf (1).jpeg",
-            "GF.PNG","GF.JPG","GF.JPEG"
+            "gf.jpg"
           ];
 
           for (const name of candidates) {
@@ -635,7 +633,7 @@
             } catch {}
           }
 
-          gfPhoto.alt = "Put gf.png (or gf.jpg) next to index.html";
+          gfPhoto.alt = "Put gf.jpg next to index.html";
           gfPhoto.src =
             "data:image/svg+xml;charset=utf-8," +
             encodeURIComponent(
