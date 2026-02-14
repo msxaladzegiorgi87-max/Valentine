@@ -1,0 +1,1459 @@
+<!-- /index.html
+  Put these files in the SAME folder:
+    - bg.mp3
+    - yes.mp3
+    - gf.png  (or gf.jpg / gf.jpeg / gf.webp / gf (1).png etc.)
+
+  Run (Termux):
+    cd /storage/emulated/0/Download/"Valentines day project"
+    python -m http.server 8080
+  Open:
+    http://127.0.0.1:8080/index.html
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Valentine</title>
+
+    <style>
+      :root{
+        --bgA:#ffb3c7;
+        --bgB:#b8b6ff;
+        --bgC:#9ef0d1;
+        --bgD:#ffd6a5;
+
+        --cardA: rgba(255,255,255,.78);
+        --cardB: rgba(255,255,255,.60);
+
+        --text:#1f1a1d;
+        --muted: rgba(31,26,29,.55);
+
+        --shadow: 0 22px 65px rgba(30,10,20,.18);
+        --shadowSoft: 0 16px 35px rgba(30,10,20,.14);
+        --radius: 34px;
+
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+      }
+
+      *{ box-sizing:border-box; }
+      html, body{ height:100%; }
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        overflow-x:hidden;
+        background:
+          radial-gradient(900px 650px at 18% 12%, rgba(255,255,255,.30), transparent 60%),
+          radial-gradient(800px 600px at 86% 18%, rgba(255,255,255,.22), transparent 60%),
+          radial-gradient(900px 700px at 50% 92%, rgba(255,255,255,.20), transparent 62%),
+          linear-gradient(135deg, var(--bgA), var(--bgB), var(--bgC), var(--bgD));
+        display:grid;
+        place-items:center;
+        padding: 28px 14px;
+      }
+
+      .noise{
+        position:fixed;
+        inset:0;
+        pointer-events:none;
+        opacity:.055;
+        mix-blend-mode: soft-light;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+        z-index: 0;
+      }
+
+      .floaters{
+        position:fixed;
+        inset:0;
+        pointer-events:none;
+        z-index: 1;
+        overflow:hidden;
+      }
+      .floater{
+        position:absolute;
+        font-size: 18px;
+        opacity: .55;
+        filter: drop-shadow(0 10px 12px rgba(0,0,0,.08));
+        transform: translate3d(0,0,0);
+        animation: drift var(--dur) linear infinite;
+      }
+      @keyframes drift{
+        0%   { transform: translate(var(--x0), 110vh) rotate(0deg); opacity: 0; }
+        12%  { opacity: .55; }
+        100% { transform: translate(var(--x1), -18vh) rotate(360deg); opacity: 0; }
+      }
+
+      #overlay{
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 99999;
+      }
+      #overlay > *{ pointer-events: auto; }
+
+      #landedEmojis{
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 99990;
+      }
+      .landedEmoji{
+        position: fixed;
+        transform: translate(-50%, -50%);
+        filter: drop-shadow(0 10px 12px rgba(0,0,0,.10));
+        opacity: 0;
+        animation: landedIn 420ms ease forwards;
+        will-change: transform, opacity;
+        user-select:none;
+      }
+      @keyframes landedIn{
+        from{ opacity: 0; transform: translate(-50%, -55%) scale(.82) rotate(-6deg); }
+        to  { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+      }
+
+      #twinkles{
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 99991;
+      }
+      .twinkle{
+        position: fixed;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        filter: drop-shadow(0 10px 12px rgba(0,0,0,.10));
+        will-change: transform, opacity;
+        user-select:none;
+        animation: twinklePop 1100ms ease-in-out forwards;
+      }
+      @keyframes twinklePop{
+        0%   { opacity: 0; transform: translate(-50%, -50%) scale(.65) rotate(-10deg); }
+        18%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05) rotate(6deg); }
+        55%  { opacity: .95; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(.85) rotate(12deg); }
+      }
+
+      .poof{
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 1000000;
+        width: 10px;
+        height: 10px;
+      }
+      .poof .ring{
+        position:absolute;
+        left:50%;
+        top:50%;
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        border: 2px solid rgba(183,14,90,.22);
+        transform: translate(-50%, -50%) scale(.4);
+        opacity: 0;
+        animation: poofRing 520ms ease forwards;
+      }
+      .poof.big .ring{
+        border-width: 2.5px;
+        animation-duration: 620ms;
+        animation-name: poofRingBig;
+      }
+      @keyframes poofRing{
+        0%   { opacity: 0; transform: translate(-50%, -50%) scale(.3); }
+        18%  { opacity: .9; }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); }
+      }
+      @keyframes poofRingBig{
+        0%   { opacity: 0; transform: translate(-50%, -50%) scale(.25); }
+        18%  { opacity: .95; }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(4.4); }
+      }
+      .poof .p{
+        position:absolute;
+        left:50%;
+        top:50%;
+        font-size: 18px;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        filter: drop-shadow(0 10px 12px rgba(0,0,0,.08));
+        animation: poofParticle 520ms ease forwards;
+      }
+      .poof.big .p{
+        font-size: 22px;
+        animation-duration: 620ms;
+      }
+      @keyframes poofParticle{
+        0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+        20%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); }
+      }
+
+      .wrap{
+        width: min(820px, 100%);
+        position:relative;
+        z-index: 2;
+      }
+
+      .card{
+        width: 100%;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(255,255,255,.62);
+        background: linear-gradient(180deg, var(--cardA), var(--cardB));
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: clamp(16px, 4vw, 32px);
+        position:relative;
+        overflow:hidden;
+      }
+
+      .panel{
+        border-radius: calc(var(--radius) - 6px);
+        padding: clamp(22px, 5vw, 42px);
+        display:grid;
+        place-items:center;
+        gap: 14px;
+        text-align:center;
+        position:relative;
+        overflow:hidden;
+        background:
+          radial-gradient(640px 440px at 18% 18%, rgba(255,255,255,.94), transparent 62%),
+          radial-gradient(700px 480px at 82% 22%, rgba(255,255,255,.88), transparent 64%),
+          radial-gradient(860px 660px at 50% 100%, rgba(255,120,190,.18), transparent 60%),
+          linear-gradient(135deg, rgba(255,210,226,.92), rgba(230,224,255,.88), rgba(204,250,238,.88));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 18px 40px rgba(30,10,20,.10);
+        border: 1px solid rgba(255,255,255,.64);
+      }
+
+      .panel::before{
+        content:"";
+        position:absolute;
+        inset: 0;
+        pointer-events:none;
+        opacity: .16;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Ctext x='18' y='48' font-size='22'%3E%F0%9F%92%97%3C/text%3E%3Ctext x='120' y='86' font-size='18'%3E%F0%9F%92%9E%3C/text%3E%3Ctext x='50' y='140' font-size='18'%3E%F0%9F%8C%B8%3C/text%3E%3Ctext x='160' y='170' font-size='20'%3E%F0%9F%92%8C%3C/text%3E%3C/svg%3E");
+        background-size: 220px 220px;
+      }
+
+      .sparkle{
+        position:absolute;
+        width: 180px;
+        height: 180px;
+        border-radius: 999px;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.78), transparent 64%);
+        opacity: .58;
+        pointer-events:none;
+      }
+      .sparkle.s1{ left: -60px; top: -70px; transform: rotate(15deg); }
+      .sparkle.s2{ right: -88px; bottom: -98px; transform: rotate(-10deg); opacity: .42; }
+
+      .stickerSlot{
+        width: 160px;
+        height: 120px;
+        display:grid;
+        place-items:center;
+        position:relative;
+        z-index: 2;
+      }
+      .stickerSlot img{
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display:block;
+        opacity: 0;
+        transform: translateY(6px) scale(.98);
+        transition: opacity 220ms ease, transform 220ms ease;
+        filter: drop-shadow(0 14px 18px rgba(0,0,0,.12));
+      }
+      .stickerSlot img.on{
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      h1{
+        margin: 0;
+        font-size: clamp(28px, 4.6vw, 52px);
+        line-height: 1.1;
+        font-weight: 950;
+        letter-spacing: -0.03em;
+        /* NOTE: removed text-transform: lowercase; so "Linda" stays capitalized */
+        position:relative;
+        z-index: 2;
+      }
+      .subtitle{
+        margin: 0;
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 14px;
+        position:relative;
+        z-index: 2;
+      }
+
+      .bubbleSlot{
+        width: min(560px, 100%);
+        min-height: 56px;
+        display:grid;
+        place-items:center;
+        position:relative;
+        z-index: 3;
+        margin-top: 2px;
+      }
+      .bubble{
+        width: 100%;
+        max-width: min(520px, 92vw);
+        background: rgba(255,255,255,.90);
+        border: 1px solid rgba(0,0,0,.06);
+        border-radius: 18px;
+        padding: 14px 16px;
+        box-shadow: 0 14px 30px rgba(30,10,20,.14);
+        color: rgba(31,26,29,.82);
+        font-weight: 950;
+        font-size: 18px;
+        line-height: 1.15;
+        text-align:center;
+        opacity: 0;
+        pointer-events:none;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transform: translateY(6px) scale(.985);
+      }
+      .bubble.show{ animation: popLong 6000ms ease forwards; }
+      @keyframes popLong{
+        0%   { opacity:0; transform: translateY(8px) scale(.98); }
+        8%   { opacity:1; transform: translateY(0) scale(1.02); }
+        16%  { opacity:1; transform: translateY(0) scale(1); }
+        86%  { opacity:1; transform: translateY(0) scale(1); }
+        100% { opacity:0; transform: translateY(-6px) scale(.99); }
+      }
+      .bubble.fadeFast{ animation: fadeFast 220ms ease forwards; }
+      @keyframes fadeFast{
+        from{ opacity: 1; transform: translateY(0) scale(1); }
+        to{ opacity: 0; transform: translateY(-6px) scale(.99); }
+      }
+
+      .actions{
+        position:relative;
+        width: min(540px, 100%);
+        height: 120px;
+        margin-top: 2px;
+        display:grid;
+        place-items:center;
+        z-index: 2;
+      }
+
+      .buttons{
+        width: 100%;
+        height: 100%;
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap: 14px;
+        padding: 0 8px;
+      }
+
+      .yes, .no{
+        width: min(240px, 44vw);
+        height: 66px;
+      }
+
+      .yes{
+        appearance:none;
+        border:none;
+        cursor:pointer;
+        border-radius: 999px;
+        font-size: 26px;
+        font-weight: 950;
+        color: #fff;
+        background: linear-gradient(180deg, #b70e5a, #9a0b4b);
+        box-shadow: 0 18px 42px rgba(183,14,90,.25);
+        transition: transform 170ms ease, filter 170ms ease, width 420ms cubic-bezier(.2,.9,.2,1);
+        outline:none;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        position:relative;
+      }
+      .yes:hover{ filter: brightness(1.03); transform: translateY(-1px); }
+      .yes:active{ transform: translateY(0px) scale(.99); }
+      .yes:focus-visible{ outline: 3px solid rgba(183,14,90,.35); outline-offset: 4px; }
+
+      .buttons.after-no .yes{ width: 100%; }
+
+      .yes.heartbeat{ animation: heartbeat 950ms ease-in-out 3; }
+      @keyframes heartbeat{
+        0%   { transform: translateY(0) scale(1); }
+        18%  { transform: translateY(0) scale(1.04); }
+        32%  { transform: translateY(0) scale(1); }
+        48%  { transform: translateY(0) scale(1.03); }
+        62%  { transform: translateY(0) scale(1); }
+        100% { transform: translateY(0) scale(1); }
+      }
+
+      .noPlaceholder{
+        width: min(240px, 44vw);
+        height: 66px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        opacity: 0;
+        transition: width 420ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
+      }
+      .buttons.after-no .noPlaceholder{ width: 0px; opacity: 0; }
+
+      .no{
+        appearance:none;
+        border: 1px solid rgba(0,0,0,.06);
+        cursor:pointer;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 900;
+        color: rgba(31,26,29,.62);
+        background: rgba(255,255,255,.72);
+        box-shadow: var(--shadowSoft);
+        transition: transform 160ms ease, background 160ms ease, opacity 140ms ease;
+        outline:none;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        position: fixed;
+        left: -9999px;
+        top: -9999px;
+        z-index: 99998;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+      .no:hover{ background: rgba(255,255,255,.82); transform: scale(1.03); }
+      .no:focus-visible{ outline: 3px solid rgba(0,0,0,.14); outline-offset: 4px; }
+
+      .hint{
+        margin: 8px 0 0;
+        font-size: 16px;
+        color: var(--muted);
+        display:flex;
+        align-items:center;
+        gap: 8px;
+        justify-content:center;
+        user-select:none;
+        position:relative;
+        z-index: 2;
+      }
+
+      .view{ display:none; width:100%; }
+      .view.active{ display:grid; animation: fadeIn 280ms ease both; }
+      @keyframes fadeIn{
+        from{ opacity:0; transform: translateY(6px) scale(.99); }
+        to{ opacity:1; transform: translateY(0) scale(1); }
+      }
+
+      .bigTitle{
+        margin:0;
+        font-weight: 1000;
+        letter-spacing: -0.03em;
+        font-size: clamp(34px, 5.6vw, 64px);
+        position:relative;
+        z-index: 2;
+      }
+      .goodGirl{
+        margin: 0;
+        font-size: clamp(18px, 2.6vw, 26px);
+        font-weight: 950;
+        color: rgba(31,26,29,.7);
+        position:relative;
+        z-index: 2;
+      }
+
+      .gfFrame{
+        width: min(520px, 100%);
+        aspect-ratio: 1 / 1;
+        border-radius: 22px;
+        overflow:hidden;
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 18px 45px rgba(30,10,20,.14);
+        border: 1px solid rgba(255,255,255,.62);
+        background: radial-gradient(700px 500px at 50% 35%, rgba(255,255,255,.86), rgba(246,213,221,.64));
+      }
+      .gfFrame::after{
+        content:"";
+        position:absolute;
+        inset: -18px;
+        background:
+          radial-gradient(circle at 30% 35%, rgba(183,14,90,.18), transparent 55%),
+          radial-gradient(circle at 70% 55%, rgba(255,140,200,.16), transparent 58%),
+          radial-gradient(circle at 50% 80%, rgba(255,255,255,.20), transparent 60%);
+        filter: blur(18px);
+        opacity: .85;
+        animation: loveGlow 3200ms ease-in-out infinite;
+        pointer-events:none;
+      }
+      @keyframes loveGlow{
+        0%{ transform: scale(0.98); opacity: .70; }
+        50%{ transform: scale(1.03); opacity: .92; }
+        100%{ transform: scale(0.98); opacity: .70; }
+      }
+      .gfPhoto{
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+        object-fit: cover;
+        display:block;
+        z-index: 2;
+      }
+
+      canvas#burst{
+        position:fixed;
+        inset:0;
+        width:100%;
+        height:100%;
+        pointer-events:none;
+        z-index: 3;
+      }
+
+      @media (prefers-reduced-motion: reduce){
+        .floater{ animation: none; display:none; }
+        .yes, .no{ transition:none; }
+        .yes.heartbeat{ animation:none; }
+        .bubble.show, .bubble.fadeFast{ animation: none; opacity:1; }
+        .view.active{ animation:none; }
+        .landedEmoji{ animation:none; opacity:1; }
+        .twinkle{ animation:none; opacity:1; }
+        .poof{ display:none; }
+        .gfFrame::after{ animation:none; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <div class="floaters" id="floaters" aria-hidden="true"></div>
+
+    <canvas id="burst" aria-hidden="true"></canvas>
+    <div id="overlay" aria-hidden="true"></div>
+    <div id="twinkles" aria-hidden="true"></div>
+    <div id="landedEmojis" aria-hidden="true"></div>
+
+    <audio id="bgAudio" preload="auto" loop playsinline src="bg.mp3"></audio>
+    <audio id="yesAudio" preload="auto" playsinline src="yes.mp3"></audio>
+
+    <main class="wrap">
+      <section class="card">
+        <div class="panel">
+          <div class="sparkle s1" aria-hidden="true"></div>
+          <div class="sparkle s2" aria-hidden="true"></div>
+
+          <div class="view active" id="promptView" style="place-items:center; gap: 14px; text-align:center;">
+            <div class="stickerSlot" aria-hidden="true">
+              <img id="stickerImg" alt="" />
+            </div>
+
+            <!-- UPDATED TEXT -->
+            <h1>Linda will you be love of my life?</h1>
+            <p class="subtitle">just one tiny button… and one very shy one 💗</p>
+
+            <div class="bubbleSlot" aria-hidden="true">
+              <div class="bubble" id="bubble"></div>
+            </div>
+
+            <div class="actions">
+              <div class="buttons" id="buttons">
+                <button class="yes" id="yesBtn" type="button" aria-label="Yes">Yes 💞</button>
+                <div class="noPlaceholder" id="noPlaceholder" aria-hidden="true"></div>
+                <button class="no" id="noBtn" type="button" aria-label="No">No 😼</button>
+              </div>
+            </div>
+
+            <p class="hint" id="hintText">No seems a bit shy 😈</p>
+          </div>
+
+          <div class="view" id="successView" style="place-items:center; gap: 12px; text-align:center;">
+            <div aria-hidden="true">💗 💌 💗</div>
+            <h2 class="bigTitle" id="bigTitle">MIYVARXAR LINDA</h2>
+            <p class="goodGirl">Good Girll!!</p>
+
+            <div class="gfFrame">
+              <img class="gfPhoto" id="gfPhoto" alt="Linda" loading="eager" />
+            </div>
+
+            <p class="hint">tap anywhere to clear the hearts 💗</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const $ = (id) => document.getElementById(id);
+
+        const floaters = $("floaters");
+        const overlay = $("overlay");
+        const twinkles = $("twinkles");
+        const landedEmojis = $("landedEmojis");
+
+        const buttons = $("buttons");
+        const noPlaceholder = $("noPlaceholder");
+
+        const yesBtn = $("yesBtn");
+        const noBtn = $("noBtn");
+        const hintText = $("hintText");
+        const bubble = $("bubble");
+        const stickerImg = $("stickerImg");
+
+        const promptView = $("promptView");
+        const successView = $("successView");
+        const bigTitle = $("bigTitle");
+
+        const gfPhoto = $("gfPhoto");
+
+        const bgAudioEl = $("bgAudio");
+        const yesAudioEl = $("yesAudio");
+
+        // Any logs stay ONLY in console. Nothing is ever written to the page.
+        // (Do not paste JS outside this <script> block.)
+
+        async function resolveGfPhoto() {
+          const candidates = [
+            "gf.png","gf.jpg","gf.jpeg","gf.webp",
+            "gf (1).png","gf (1).jpg","gf (1).jpeg",
+            "GF.PNG","GF.JPG","GF.JPEG"
+          ];
+
+          for (const name of candidates) {
+            try {
+              const r = await fetch(name, { method: "HEAD", cache: "no-store" });
+              if (r.ok) { gfPhoto.src = name; return; }
+            } catch {}
+          }
+
+          gfPhoto.alt = "Put gf.png (or gf.jpg) next to index.html";
+          gfPhoto.src =
+            "data:image/svg+xml;charset=utf-8," +
+            encodeURIComponent(
+              `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800'>
+                <defs>
+                  <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+                    <stop stop-color='#ffd2e2' offset='0'/>
+                    <stop stop-color='#e6e0ff' offset='0.5'/>
+                    <stop stop-color='#ccfaee' offset='1'/>
+                  </linearGradient>
+                </defs>
+                <rect width='100%' height='100%' fill='url(#g)'/>
+                <text x='50%' y='48%' font-size='34' text-anchor='middle' fill='rgba(31,26,29,.7)' font-family='system-ui'>
+                  gf image not found
+                </text>
+                <text x='50%' y='54%' font-size='22' text-anchor='middle' fill='rgba(31,26,29,.55)' font-family='system-ui'>
+                  Put it in the same folder as index.html
+                </text>
+              </svg>`
+            );
+        }
+
+        const noTexts = [
+          "linda mekaifebi?",
+          "pookiee rashobiii???",
+          "axla gavdeldebi icodee.....",
+          "moval maqa...",
+          "auuchemikaiii",
+          "raarii martla lindaa daa?",
+          "LINDAAA..",
+          "Au madeleb xom...??"
+        ];
+        const hintBase = [
+          "No seems a bit shy 😈",
+          "too slow 😌",
+          "nice try 😭",
+          "it ran away 🏃‍♀️💨",
+          "just press Yes already 💞"
+        ];
+
+        function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
+        function setSticker(src) {
+          stickerImg.style.display = "block";
+          stickerImg.classList.remove("on");
+          stickerImg.src = src;
+          stickerImg.onload = () => stickerImg.classList.add("on");
+          stickerImg.onerror = () => { stickerImg.style.display = "none"; };
+        }
+        function swapSticker(src) {
+          stickerImg.classList.remove("on");
+          window.setTimeout(() => setSticker(src), 140);
+        }
+
+        // UPDATED START STICKER (shows at the start, all after-no logic stays the same)
+        const STICKER_BEFORE = "https://media.giphy.com/media/MCFKP3Bg43ZVYGrZqH/giphy.gif";
+
+        const STICKERS_INTRO = [
+          "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnJlZHNsZzhhamw2dnlpYnh1aXA3OGtsOHp1OHMyb3Q2YTNtZGhveSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/Xr9TlAqw3S7VPOrftK/giphy.gif",
+          "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcWR2NmdhbjNpNmNxbW84ZWk5Zjh6cXRxdnJzc2F6ejRrMnBuZW80dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/l0Iy8m9yd2pBk5NXW/giphy.gif",
+          "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmVob2x3d253dmljc2Z0ZDhlcnh0Z3B6a2dyY2tzeTIwajczNHMyciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/dRHzQNsHOlVsid9Pct/giphy.gif",
+        ];
+
+        const STICKERS_POOL = [
+          "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ216YzdoOXZqNW44OTZtZGR3ZHR5a2hjN3dldjQwaTM1Z215ZHVhbCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/TvpRL1xoIWWF3hdvw7/giphy.gif",
+          "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExeXJwejRkcG9yZmlpamV3aXNwMXl0OXZyenlyM2xzMm1iNXJ1eXMwbCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/gTtaTV1m4YL3NLMdqN/giphy.gif",
+          "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExOGFiNjhzZHp6a2ZjdXFsZHpjMmUwZDgwYTcxZTVsbDViYnpsZDdldyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/10MwRXu4YQ9mOk/giphy.gif",
+          "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExN3Q2dzAwbmF6eTZpZ3FrbXhnNGZpaDk0ZGd2bmNlZWptdGtkajZsOSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/eLudeY6Dwj4gpbMZYV/giphy.gif",
+        ];
+
+        let lastPoolSticker = "";
+        function nextAfterSticker(noClickCount) {
+          if (noClickCount <= STICKERS_INTRO.length) return STICKERS_INTRO[noClickCount - 1];
+          for (let i = 0; i < 12; i++) {
+            const s = pick(STICKERS_POOL);
+            if (s !== lastPoolSticker) { lastPoolSticker = s; return s; }
+          }
+          lastPoolSticker = STICKERS_POOL[0] || "";
+          return lastPoolSticker;
+        }
+
+        let bubbleReplaceTimer = null;
+        function showBubble(text) {
+          if (bubbleReplaceTimer) { clearTimeout(bubbleReplaceTimer); bubbleReplaceTimer = null; }
+
+          const startNew = () => {
+            bubble.textContent = text;
+            bubble.classList.remove("fadeFast", "show");
+            void bubble.offsetWidth;
+            bubble.classList.add("show");
+            bubbleReplaceTimer = window.setTimeout(() => {
+              bubble.classList.remove("show");
+              bubbleReplaceTimer = null;
+            }, 6100);
+          };
+
+          if (bubble.classList.contains("show")) {
+            bubble.classList.remove("show", "fadeFast");
+            void bubble.offsetWidth;
+            bubble.classList.add("fadeFast");
+            bubbleReplaceTimer = window.setTimeout(() => {
+              bubble.classList.remove("fadeFast");
+              startNew();
+            }, 220);
+          } else startNew();
+        }
+
+        // ========= AUDIO =========
+        let audioCtx = null;
+        let bgSource = null;
+        let yesSource = null;
+        let bgGain = null;
+        let yesGain = null;
+        let audioReady = false;
+        let bgStarted = false;
+
+        function getAudioCtx() {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return null;
+          if (!audioCtx) audioCtx = new Ctx();
+          return audioCtx;
+        }
+        function withAudio(fn) {
+          const ctx = getAudioCtx();
+          if (!ctx) return;
+          if (ctx.state === "running") { fn(ctx); return; }
+          ctx.resume().then(() => fn(ctx)).catch(() => {});
+        }
+        function ensureMediaGraph() {
+          withAudio(() => {
+            if (audioReady) return;
+
+            bgGain = audioCtx.createGain();
+            yesGain = audioCtx.createGain();
+            bgGain.gain.value = 0.0001;
+            yesGain.gain.value = 0.0001;
+
+            bgSource = audioCtx.createMediaElementSource(bgAudioEl);
+            yesSource = audioCtx.createMediaElementSource(yesAudioEl);
+
+            bgSource.connect(bgGain).connect(audioCtx.destination);
+            yesSource.connect(yesGain).connect(audioCtx.destination);
+
+            audioReady = true;
+          });
+        }
+        function fadeGainTo(gainNode, target, seconds) {
+          if (!gainNode) return;
+          withAudio((ctx) => {
+            const t = ctx.currentTime;
+            const dur = Math.max(0.01, seconds);
+            const cur = Math.max(0.0001, gainNode.gain.value || 0.0001);
+            const dst = Math.max(0.0001, target);
+
+            gainNode.gain.cancelScheduledValues(t);
+            gainNode.gain.setValueAtTime(cur, t);
+            gainNode.gain.exponentialRampToValueAtTime(dst, t + dur);
+          });
+        }
+        async function safePlay(el) {
+          try {
+            const p = el.play();
+            if (p && typeof p.then === "function") await p;
+            return true;
+          } catch {
+            return false;
+          }
+        }
+        async function startBgLoop() {
+          ensureMediaGraph();
+          if (!audioReady || bgStarted) return;
+
+          bgAudioEl.loop = true;
+          bgAudioEl.currentTime = Math.min(bgAudioEl.currentTime || 0, 0.2);
+          const ok = await safePlay(bgAudioEl);
+          if (!ok) return;
+
+          bgStarted = true;
+          fadeGainTo(bgGain, 0.22, 0.8);
+        }
+        function unlockAudio() {
+          ensureMediaGraph();
+          startBgLoop();
+        }
+        function armFirstGestureAudio() {
+          const once = () => {
+            document.removeEventListener("pointerdown", once);
+            document.removeEventListener("touchstart", once);
+            unlockAudio();
+          };
+          document.addEventListener("pointerdown", once, { passive: true });
+          document.addEventListener("touchstart", once, { passive: true });
+        }
+
+        async function playYesSongSegment() {
+          unlockAudio();
+
+          fadeGainTo(bgGain, 0.0001, 0.8);
+
+          const startAt = 0.6;
+          const endAt = 19.0;
+          const fadeIn = 0.8;
+          const fadeOut = 0.8;
+
+          try { yesAudioEl.pause(); } catch {}
+          yesAudioEl.currentTime = startAt;
+
+          fadeGainTo(yesGain, 0.0001, 0.01);
+          const ok = await safePlay(yesAudioEl);
+          if (!ok) return;
+
+          fadeGainTo(yesGain, 0.95, fadeIn);
+
+          const segmentMs = Math.max(0, (endAt - startAt) * 1000);
+          const fadeOutStartMs = Math.max(0, segmentMs - fadeOut * 1000);
+
+          window.setTimeout(() => fadeGainTo(yesGain, 0.0001, fadeOut), fadeOutStartMs);
+
+          window.setTimeout(() => {
+            try { yesAudioEl.pause(); } catch {}
+            window.setTimeout(() => {
+              safePlay(bgAudioEl);
+              fadeGainTo(bgGain, 0.22, 0.8);
+            }, 120);
+          }, segmentMs + 40);
+        }
+
+        function playNoClickSound() {
+          unlockAudio();
+          withAudio((ctx) => {
+            const t0 = ctx.currentTime;
+            const dur = 0.07;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, t0);
+            gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.008);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(1700, t0);
+
+            const osc = ctx.createOscillator();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(520, t0);
+            osc.frequency.exponentialRampToValueAtTime(260, t0 + dur);
+
+            osc.connect(gain);
+            gain.connect(filter).connect(ctx.destination);
+
+            osc.start(t0);
+            osc.stop(t0 + dur);
+          });
+        }
+
+        function playYesCelebrationSound() {
+          unlockAudio();
+          withAudio((ctx) => {
+            const base = ctx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.5];
+            const step = 0.09;
+
+            const out = ctx.createGain();
+            out.gain.setValueAtTime(0.0001, base);
+            out.gain.exponentialRampToValueAtTime(0.22, base + 0.01);
+            out.gain.exponentialRampToValueAtTime(0.0001, base + 0.60);
+            out.connect(ctx.destination);
+
+            for (let i = 0; i < notes.length; i++) {
+              const t0 = base + i * step;
+              const t1 = t0 + (i === notes.length - 1 ? 0.20 : 0.12);
+
+              const g = ctx.createGain();
+              g.gain.setValueAtTime(0.0001, t0);
+              g.gain.exponentialRampToValueAtTime(i === notes.length - 1 ? 0.22 : 0.15, t0 + 0.012);
+              g.gain.exponentialRampToValueAtTime(0.0001, t1);
+
+              const bell = ctx.createOscillator();
+              bell.type = "sine";
+              bell.frequency.setValueAtTime(notes[i], t0);
+
+              bell.connect(g);
+              g.connect(out);
+
+              bell.start(t0);
+              bell.stop(t1);
+            }
+          });
+        }
+
+        function playPopSound(type = "small", whenMs = 0) {
+          unlockAudio();
+          withAudio((ctx) => {
+            const startAt = ctx.currentTime + Math.max(0, whenMs) / 1000;
+            const dur = type === "big" ? 0.16 : 0.075;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, startAt);
+            gain.gain.exponentialRampToValueAtTime(type === "big" ? 0.28 : 0.12, startAt + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+
+            gain.connect(ctx.destination);
+
+            const osc = ctx.createOscillator();
+            osc.type = type === "big" ? "sine" : "triangle";
+            osc.frequency.setValueAtTime(type === "big" ? 140 : 210, startAt);
+            osc.frequency.exponentialRampToValueAtTime(type === "big" ? 70 : 120, startAt + dur);
+
+            osc.connect(gain);
+            osc.start(startAt);
+            osc.stop(startAt + dur);
+          });
+        }
+
+        function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+          return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+        }
+        function getSafeInsets() {
+          const cs = getComputedStyle(document.documentElement);
+          return {
+            top: parseFloat(cs.getPropertyValue("--safe-top")) || 0,
+            right: parseFloat(cs.getPropertyValue("--safe-right")) || 0,
+            bottom: parseFloat(cs.getPropertyValue("--safe-bottom")) || 0,
+            left: parseFloat(cs.getPropertyValue("--safe-left")) || 0,
+          };
+        }
+        function getViewport() {
+          const vv = window.visualViewport;
+          if (vv) return { left: vv.offsetLeft, top: vv.offsetTop, width: vv.width, height: vv.height };
+          return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+        }
+        function clampToViewport(x, y, bw, bh) {
+          const vp = getViewport();
+          const ins = getSafeInsets();
+          const pad = 10;
+
+          const minX = vp.left + ins.left + pad;
+          const maxX = vp.left + vp.width - ins.right - pad - bw;
+          const minY = vp.top + ins.top + pad;
+          const maxY = vp.top + vp.height - ins.bottom - pad - bh;
+
+          return { x: Math.floor(clamp(x, minX, maxX)), y: Math.floor(clamp(y, minY, maxY)) };
+        }
+
+        function triggerHeartbeat() {
+          yesBtn.classList.remove("heartbeat");
+          void yesBtn.offsetWidth;
+          yesBtn.classList.add("heartbeat");
+        }
+
+        const SLOT_PCTS = [
+          { x: 0.08, y: 0.34 },
+          { x: 0.60, y: 0.34 },
+          { x: 0.08, y: 0.50 },
+          { x: 0.60, y: 0.50 },
+          { x: 0.08, y: 0.66 },
+          { x: 0.60, y: 0.66 },
+          { x: 0.18, y: 0.80 },
+          { x: 0.52, y: 0.80 },
+        ];
+
+        let slotBag = [];
+        function refillSlotBag() {
+          slotBag = Array.from({ length: SLOT_PCTS.length }, (_, i) => i);
+          for (let i = slotBag.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [slotBag[i], slotBag[j]] = [slotBag[j], slotBag[i]];
+          }
+        }
+
+        function positionNoAtPlaceholder() {
+          const ph = noPlaceholder.getBoundingClientRect();
+          const br = noBtn.getBoundingClientRect();
+          const bw = Math.max(br.width || 0, ph.width || 160);
+          const bh = Math.max(br.height || 0, ph.height || 66);
+          const pos = clampToViewport(ph.left, ph.top, bw, bh);
+          noBtn.style.left = `${pos.x}px`;
+          noBtn.style.top = `${pos.y}px`;
+        }
+
+        function teleportNoToSlot() {
+          const oldRect = noBtn.getBoundingClientRect();
+          const yesRect = yesBtn.getBoundingClientRect();
+          const bw = Math.max(oldRect.width, 160);
+          const bh = Math.max(oldRect.height, 66);
+
+          if (!slotBag.length) refillSlotBag();
+
+          let chosen = null;
+          for (let tries = 0; tries < SLOT_PCTS.length + 2; tries++) {
+            if (!slotBag.length) refillSlotBag();
+            const idx = slotBag.shift();
+            const slot = SLOT_PCTS[idx];
+
+            const vp = getViewport();
+            const baseX = vp.left + slot.x * vp.width;
+            const baseY = vp.top + slot.y * vp.height;
+
+            const x = baseX + (Math.random() * 18 - 9);
+            const y = baseY + (Math.random() * 14 - 7);
+            const pos = clampToViewport(x, y, bw, bh);
+
+            const overlapsYes = rectsOverlap(pos.x, pos.y, bw, bh, yesRect.left, yesRect.top, yesRect.width, yesRect.height);
+            if (!overlapsYes) { chosen = pos; break; }
+          }
+
+          if (!chosen) {
+            const vp = getViewport();
+            chosen = clampToViewport(vp.left + 16, vp.top + vp.height * 0.78, bw, bh);
+          }
+
+          noBtn.style.left = `${chosen.x}px`;
+          noBtn.style.top = `${chosen.y}px`;
+        }
+
+        // ===== Burst + clear =====
+        const canvas = document.getElementById("burst");
+        const ctx2d = canvas.getContext("2d");
+        let burstRaf = null;
+
+        const EMOJIS = ["💗","💞","💘","💕","💝","✨"];
+        const SPRITES = new Map();
+
+        function dprCap() { return Math.min(2, window.devicePixelRatio || 1); }
+        function resizeCanvas() {
+          const dpr = dprCap();
+          canvas.width = Math.floor(window.innerWidth * dpr);
+          canvas.height = Math.floor(window.innerHeight * dpr);
+          ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        function spriteKey(emoji, size) { return `${emoji}|${Math.round(size)}`; }
+        function getEmojiSprite(emoji, size) {
+          const key = spriteKey(emoji, size);
+          if (SPRITES.has(key)) return SPRITES.get(key);
+
+          const c = document.createElement("canvas");
+          const pad = 12;
+          const w = Math.ceil(size + pad * 2);
+          c.width = w; c.height = w;
+          const g = c.getContext("2d");
+          g.font = `${size}px system-ui, Apple Color Emoji, Segoe UI Emoji`;
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.fillText(emoji, w / 2, w / 2);
+          SPRITES.set(key, c);
+          return c;
+        }
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+        function getBurstOrigin() {
+          const r = bigTitle.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+
+        function addLandedEmoji(x, y, emoji, size) {
+          const el = document.createElement("div");
+          el.className = "landedEmoji";
+          el.textContent = emoji;
+          el.style.left = `${x}px`;
+          el.style.top = `${y}px`;
+          el.style.fontSize = `${Math.round(size)}px`;
+          landedEmojis.appendChild(el);
+        }
+
+        function spawnTwinkles(origin) {
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          const count = 3 + Math.floor(Math.random() * 2);
+          const glyphs = ["✨", "✦", "✧", "💫"];
+          for (let i = 0; i < count; i++) {
+            const el = document.createElement("div");
+            el.className = "twinkle";
+            el.textContent = pick(glyphs);
+            const dx = (Math.random() * 120 - 60);
+            const dy = (Math.random() * 60 - 30);
+            el.style.left = `${origin.x + dx}px`;
+            el.style.top = `${origin.y + dy}px`;
+            el.style.fontSize = `${12 + Math.random() * 10}px`;
+            el.style.animationDelay = `${i * 90}ms`;
+            twinkles.appendChild(el);
+            window.setTimeout(() => el.remove(), 1400);
+          }
+        }
+
+        function startBurst() {
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          if (burstRaf) cancelAnimationFrame(burstRaf);
+          resizeCanvas();
+
+          const origin = getBurstOrigin();
+          spawnTwinkles(origin);
+
+          const LAND_COUNT = 8;
+          const FALL_COUNT = 6;
+          const FLOAT_COUNT = 22;
+
+          const parts = [];
+          const start = performance.now();
+
+          for (let i = 0; i < LAND_COUNT; i++) {
+            const size = 16 + Math.random() * 10;
+            parts.push({
+              type: "land",
+              emoji: pick(EMOJIS),
+              size,
+              x: origin.x, y: origin.y,
+              ox: origin.x, oy: origin.y,
+              tx: origin.x + (Math.random() * 280 - 140),
+              ty: origin.y + (Math.random() * 360 - 120),
+              ttl: 1100 + Math.random() * 500,
+              t: 0,
+              rot: Math.random() * Math.PI,
+              vr: (-0.9 + Math.random() * 1.8) * 0.02,
+              alpha: 0
+            });
+          }
+
+          for (let i = 0; i < FALL_COUNT; i++) {
+            const size = 16 + Math.random() * 10;
+            parts.push({
+              type: "fall",
+              emoji: pick(EMOJIS),
+              size,
+              x: origin.x + (Math.random() * 40 - 20),
+              y: origin.y + (Math.random() * 18 - 6),
+              vx: (Math.random() * 1.0 - 0.5),
+              vy: (-1.2 - Math.random() * 1.4),
+              g: 0.065 + Math.random() * 0.04,
+              ttl: 2400 + Math.random() * 900,
+              rot: Math.random() * Math.PI,
+              vr: (-0.9 + Math.random() * 1.8) * 0.02,
+              alpha: 1
+            });
+          }
+
+          for (let i = 0; i < FLOAT_COUNT; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const size = 14 + Math.random() * 10;
+            parts.push({
+              type: "float",
+              emoji: pick(EMOJIS),
+              size,
+              x: origin.x + (Math.random() * 30 - 15),
+              y: origin.y + (Math.random() * 22 - 10),
+              vx: Math.cos(a) * (0.6 + Math.random() * 1.6),
+              vy: Math.sin(a) * (0.6 + Math.random() * 1.6) - 1.2,
+              drag: 0.992,
+              ttl: 2200 + Math.random() * 1100,
+              rot: Math.random() * Math.PI,
+              vr: (-0.9 + Math.random() * 1.8) * 0.02,
+              alpha: 1
+            });
+          }
+
+          function drawEmoji(p) {
+            const spr = getEmojiSprite(p.emoji, p.size);
+            ctx2d.save();
+            ctx2d.globalAlpha = p.alpha;
+            ctx2d.translate(p.x, p.y);
+            ctx2d.rotate(p.rot);
+            ctx2d.drawImage(spr, -spr.width / 2, -spr.height / 2);
+            ctx2d.restore();
+          }
+
+          function tick(now) {
+            const elapsed = now - start;
+            ctx2d.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            let alive = 0;
+
+            for (let i = parts.length - 1; i >= 0; i--) {
+              const p = parts[i];
+
+              if (p.type === "land") {
+                p.t = clamp(elapsed / p.ttl, 0, 1);
+                const tt = easeOutCubic(p.t);
+                const arc = Math.sin(tt * Math.PI) * 22;
+
+                p.x = p.ox + (p.tx - p.ox) * tt;
+                p.y = p.oy + (p.ty - p.oy) * tt - arc;
+                p.rot += p.vr;
+                p.alpha = tt < 0.1 ? (tt / 0.1) : 1;
+
+                if (p.t >= 1) {
+                  addLandedEmoji(p.tx, p.ty, p.emoji, p.size);
+                  parts.splice(i, 1);
+                  continue;
+                }
+                drawEmoji(p);
+                alive += 1;
+                continue;
+              }
+
+              if (p.type === "fall") {
+                const t = clamp(elapsed / p.ttl, 0, 1);
+                p.vy += p.g;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.rot += p.vr;
+
+                const fade = t < 0.7 ? 1 : (1 - (t - 0.7) / 0.3);
+                p.alpha = clamp(fade, 0, 1);
+
+                drawEmoji(p);
+                if (t >= 1 || p.alpha <= 0.03) parts.splice(i, 1);
+                else alive += 1;
+                continue;
+              }
+
+              if (p.type === "float") {
+                const t = clamp(elapsed / p.ttl, 0, 1);
+                p.vx *= p.drag;
+                p.vy *= p.drag;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.rot += p.vr;
+
+                const fade = t < 0.65 ? 1 : (1 - (t - 0.65) / 0.35);
+                p.alpha = clamp(fade, 0, 1);
+
+                drawEmoji(p);
+                if (t >= 1 || p.alpha <= 0.03) parts.splice(i, 1);
+                else alive += 1;
+                continue;
+              }
+            }
+
+            if (alive > 0) burstRaf = requestAnimationFrame(tick);
+            else { ctx2d.clearRect(0, 0, window.innerWidth, window.innerHeight); burstRaf = null; }
+          }
+          burstRaf = requestAnimationFrame(tick);
+        }
+
+        let isClearing = false;
+        function getCenter(el) {
+          const r = el.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+        function poofAt(x, y, big = false) {
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          const el = document.createElement("div");
+          el.className = big ? "poof big" : "poof";
+          el.style.left = `${x}px`;
+          el.style.top = `${y}px`;
+
+          const ring = document.createElement("div");
+          ring.className = "ring";
+          el.appendChild(ring);
+
+          const particles = big ? ["✨", "💥", "💗", "💞", "💫"] : ["✨", "💨", "💗", "💞"];
+          const count = big ? 8 : 5;
+
+          for (let i = 0; i < count; i++) {
+            const p = document.createElement("div");
+            p.className = "p";
+            p.textContent = particles[Math.floor(Math.random() * particles.length)];
+            const spread = big ? 120 : 84;
+            const dySpread = big ? 110 : 74;
+            p.style.setProperty("--dx", `${Math.floor(-spread/2 + Math.random() * spread)}px`);
+            p.style.setProperty("--dy", `${Math.floor(-dySpread/2 + Math.random() * dySpread)}px`);
+            p.style.animationDelay = `${i * (big ? 14 : 16)}ms`;
+            el.appendChild(p);
+          }
+
+          document.body.appendChild(el);
+          window.setTimeout(() => el.remove(), big ? 760 : 650);
+        }
+
+        function clearLandedEmojisSmooth(triggerPoint) {
+          const nodes = Array.from(landedEmojis.querySelectorAll(".landedEmoji"));
+          if (!nodes.length || isClearing) return;
+          isClearing = true;
+
+          const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          const baseDelay = 120;
+          const lastIdx = nodes.length - 1;
+
+          if (triggerPoint) poofAt(triggerPoint.x, triggerPoint.y, false);
+
+          nodes.forEach((node, i) => {
+            const delay = i * baseDelay;
+            const isLast = i === lastIdx;
+            const center = getCenter(node);
+
+            playPopSound(isLast ? "big" : "small", delay);
+
+            window.setTimeout(() => poofAt(center.x, center.y, isLast), delay);
+
+            if (prefersReduced) {
+              window.setTimeout(() => {
+                node.remove();
+                if (i === lastIdx) isClearing = false;
+              }, delay);
+              return;
+            }
+
+            const scaleUp = isLast ? 1.9 : 1.25;
+            const scaleDown = isLast ? 0.08 : 0.18;
+            const dur = isLast ? 520 : 360;
+            const base = node.style.transform || "translate(-50%, -50%)";
+
+            node.animate(
+              [
+                { opacity: 1, transform: `${base} scale(1)` },
+                { opacity: 1, transform: `${base} scale(${scaleUp})` },
+                { opacity: 0, transform: `${base} scale(${scaleDown})` }
+              ],
+              { duration: dur, delay, easing: "cubic-bezier(.18,.9,.25,1)", fill: "forwards" }
+            ).onfinish = () => {
+              node.remove();
+              if (i === lastIdx) isClearing = false;
+            };
+          });
+        }
+
+        function setupClearGesture() {
+          document.addEventListener("pointerdown", (e) => {
+            if (!successView.classList.contains("active")) return;
+            clearLandedEmojisSmooth({ x: e.clientX, y: e.clientY });
+          }, { passive: true });
+        }
+
+        let noClicks = 0;
+        let afterNo = false;
+
+        let lastNoFire = 0;
+        function onNoAttempt(e) {
+          e.preventDefault();
+          unlockAudio();
+
+          const now = performance.now();
+          if (now - lastNoFire < 180) return;
+          lastNoFire = now;
+
+          playNoClickSound();
+          showBubble(pick(noTexts));
+
+          noClicks += 1;
+          hintText.textContent = hintBase[Math.min(noClicks, hintBase.length - 1)];
+
+          if (!afterNo) { afterNo = true; buttons.classList.add("after-no"); }
+          triggerHeartbeat();
+          swapSticker(nextAfterSticker(noClicks));
+          teleportNoToSlot();
+        }
+
+        function hideNoForever() {
+          noBtn.disabled = true;
+          noBtn.style.display = "none";
+          noBtn.style.pointerEvents = "none";
+        }
+
+        async function switchToSuccess() {
+          unlockAudio();
+          playYesCelebrationSound();
+          await playYesSongSegment();
+
+          hideNoForever();
+          promptView.classList.remove("active");
+          successView.classList.add("active");
+          startBurst();
+        }
+
+        function spawnFloaters() {
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          const emojis = ["💗", "💞", "💘", "💕", "💝", "✨", "🌸"];
+          const count = 16;
+          for (let i = 0; i < count; i++) {
+            const el = document.createElement("div");
+            el.className = "floater";
+            el.textContent = pick(emojis);
+            el.style.setProperty("--x0", `${Math.floor(Math.random() * 100)}vw`);
+            el.style.setProperty("--x1", `${Math.floor(Math.random() * 100)}vw`);
+            el.style.setProperty("--dur", `${10 + Math.random() * 10}s`);
+            el.style.left = "0";
+            el.style.top = "0";
+            el.style.animationDelay = `${-Math.random() * 12}s`;
+            floaters.appendChild(el);
+          }
+        }
+
+        function init() {
+          resolveGfPhoto();
+          spawnFloaters();
+          setupClearGesture();
+
+          setSticker(STICKER_BEFORE);
+
+          overlay.appendChild(noBtn);
+          refillSlotBag();
+
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              positionNoAtPlaceholder();
+            });
+          });
+
+          yesBtn.addEventListener("click", switchToSuccess);
+          noBtn.addEventListener("pointerdown", onNoAttempt, { passive: false });
+          noBtn.addEventListener("click", onNoAttempt, { passive: false });
+
+          armFirstGestureAudio();
+
+          window.addEventListener("resize", () => {
+            if (!afterNo) positionNoAtPlaceholder();
+            resizeCanvas();
+          });
+          window.visualViewport?.addEventListener("resize", () => {
+            if (!afterNo) positionNoAtPlaceholder();
+            resizeCanvas();
+          });
+          window.visualViewport?.addEventListener("scroll", () => {
+            if (!afterNo) positionNoAtPlaceholder();
+          });
+        }
+
+        init();
+      });
+    </script>
+  </body>
+</html>
+```0
